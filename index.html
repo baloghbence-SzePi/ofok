@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Osztályfőnöki Jelölések – Vezetői Döntéstámogató</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @media print {
+      .no-print { display: none !important; }
+      body { background: white !important; }
+      .print-card { box-shadow: none !important; border: 1px solid #cbd5e1 !important; }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+  <!-- FEJLÉC -->
+  <header class="bg-gradient-to-r from-slate-800 via-indigo-900 to-slate-900 text-white shadow-md no-print">
+    <div class="max-w-5xl mx-auto px-4 py-4 flex flex-wrap justify-between items-center gap-3">
+      <div>
+        <h1 class="text-xl md:text-2xl font-bold tracking-tight">🎓 Osztályfőnöki Jelölések Előkészítése</h1>
+        <p class="text-xs md:text-sm text-slate-300">Vezetőségi előszűrés és jelöltek rangsorolása a következő tanévre</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="fillDemoData()" class="text-xs bg-white/10 hover:bg-white/20 border border-white/25 px-3 py-1.5 rounded-lg font-medium transition">
+          ⚡ Demó kitöltés
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-5xl w-full mx-auto px-4 py-6">
+
+    <!-- 1. KEZDŐKÉPERNYŐ -->
+    <section id="intro-section" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8 max-w-2xl mx-auto">
+      <h2 class="text-xl font-bold text-slate-900 mb-3">A folyamat menete</h2>
+      <div class="space-y-3 text-sm md:text-base text-slate-600 mb-6">
+        <p>A döntés-előkészítés <strong>két lépésben</strong> történik:</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 text-xs md:text-sm">
+          <div class="bg-slate-50 border border-slate-200 p-3.5 rounded-xl">
+            <span class="font-bold text-indigo-700 block mb-1">1. lépés: Előszűrés (4 kategória)</span>
+            <p class="text-slate-600">Minden kollégát besorolsz a <em>Technikai KO</em>, <em>Már osztályfőnök</em>, <em>Szóba jöhet</em> vagy <em>Nem tudom elképzelni</em> csoportba.</p>
+          </div>
+          <div class="bg-emerald-50/60 border border-emerald-200 p-3.5 rounded-xl">
+            <span class="font-bold text-emerald-800 block mb-1">2. lépés: Rangsorolás (3 kategória)</span>
+            <p class="text-slate-600">A <em>Szóba jöhet</em> csoportba tett jelölteket három támogatási szintbe sorolod tovább.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vezetőségi tag neve -->
+      <div class="mb-5">
+        <label for="leader-name" class="block text-sm font-bold text-slate-700 mb-1.5">
+          Vezetőségi tag neve / beosztása: <span class="text-rose-600">*</span>
+        </label>
+        <input type="text" id="leader-name" placeholder="Pl. Kovács Anna (igazgatóhelyettes)"
+          class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-base" />
+        <p id="name-error" class="text-rose-600 text-xs font-semibold mt-1 hidden">Kérlek, add meg a nevedet a kezdéshez!</p>
+      </div>
+
+      <!-- Névsor szerkesztő (lenyitható) -->
+      <details class="mb-6 bg-slate-50 border border-slate-200 rounded-xl p-4">
+        <summary class="text-sm font-bold text-slate-700 cursor-pointer flex items-center justify-between">
+          <span>📋 Tantestületi névsor megtekintése / módosítása (<span id="teacher-count-badge">16</span> fő)</span>
+          <span class="text-xs text-indigo-600">Kattints a szerkesztéshez ▼</span>
+        </summary>
+        <div class="mt-3 pt-3 border-t border-slate-200">
+          <label for="teacher-list-input" class="block text-xs text-slate-600 mb-1.5">
+            Írd vagy másold be a tanárok neveit (soronként egy név):
+          </label>
+          <textarea id="teacher-list-input" rows="7" oninput="updateTeacherCount()"
+            class="w-full p-3 rounded-xl border border-slate-300 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+        </div>
+      </details>
+
+      <button onclick="startStep1()"
+        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 px-6 rounded-xl shadow-sm transition text-base">
+        1. lépés indítása: Előszűrés →
+      </button>
+    </section>
+
+    <!-- 2. ELSŐ FELÜLET: ELŐSZŰRÉS (4 KATEGÓRIA) -->
+    <section id="step1-section" class="hidden max-w-5xl mx-auto">
+      <!-- Felső összesítő és szűrősáv -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 md:p-5 mb-5 sticky top-2 z-10">
+        <div class="flex flex-wrap justify-between items-center gap-2 mb-3">
+          <div>
+            <span class="text-xs font-bold uppercase tracking-wider text-indigo-600">1 / 2. lépés · Előszűrés</span>
+            <h2 class="text-lg font-bold text-slate-900">Tantestület besorolása (<span id="s1-leader-display" class="text-indigo-700"></span>)</h2>
+          </div>
+          <div id="s1-progress-badge" class="text-xs font-bold px-3 py-1.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
+            Még 0 fő nincs besorolva
+          </div>
+        </div>
+
+        <!-- Kategória számlálók / Szűrőgombok -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-xs font-bold" id="s1-filter-bar"></div>
+      </div>
+
+      <!-- Tanárok listája -->
+      <div id="s1-teachers-list" class="space-y-3"></div>
+
+      <!-- Alsó továbblépés sáv -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 md:p-5 mt-6 flex flex-wrap justify-between items-center gap-4">
+        <button onclick="backToIntro()" class="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-semibold hover:bg-slate-50 transition text-sm">
+          ← Vissza a névsorhoz
+        </button>
+
+        <div class="flex items-center gap-3 ml-auto">
+          <span id="s1-lock-hint" class="text-xs font-semibold text-slate-500">
+            Minden tanár besorolása után léphetsz tovább.
+          </span>
+          <button id="btn-to-step2" onclick="startStep2()" disabled
+            class="px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-sm transition disabled:opacity-40 disabled:cursor-not-allowed text-sm md:text-base">
+            Tovább a jelöltekhez →
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. MÁSODIK FELÜLET: JELÖLTEK RANGSOROLÁSA (3 KATEGÓRIA) -->
+    <section id="step2-section" class="hidden max-w-5xl mx-auto">
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 md:p-5 mb-5 sticky top-2 z-10">
+        <div class="flex flex-wrap justify-between items-center gap-2 mb-3">
+          <div>
+            <span class="text-xs font-bold uppercase tracking-wider text-emerald-600">2 / 2. lépés · Jelöltek differenciálása</span>
+            <h2 class="text-lg font-bold text-slate-900">„Szóba jöhet” jelöltek besorolása (<span id="s2-count">0</span> fő)</h2>
+          </div>
+          <div id="s2-progress-badge" class="text-xs font-bold px-3 py-1.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
+            Még 0 jelölt nincs besorolva
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2 text-xs font-bold" id="s2-counters"></div>
+      </div>
+
+      <!-- Továbbjutott jelöltek kártyái -->
+      <div id="s2-candidates-list" class="space-y-3.5"></div>
+
+      <!-- Alsó navigáció -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 md:p-5 mt-6 flex flex-wrap justify-between items-center gap-4">
+        <button onclick="backToStep1()" class="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-semibold hover:bg-slate-50 transition text-sm">
+          ← Vissza az előszűréshez
+        </button>
+
+        <div class="flex items-center gap-3 ml-auto">
+          <span id="s2-lock-hint" class="text-xs font-semibold text-slate-500">
+            Sorold be az összes jelöltet a lezáráshoz.
+          </span>
+          <button id="btn-finish" onclick="finishDecision()" disabled
+            class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-sm transition disabled:opacity-40 disabled:cursor-not-allowed text-sm md:text-base">
+            Összesítés és beküldés ✓
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. ÖSSZESÍTŐ ÉS NYOMTATHATÓ DÖNTÉSI LAP -->
+    <section id="result-section" class="hidden space-y-6">
+      <div id="sync-banner" class="no-print rounded-xl p-4 border text-sm font-medium flex items-center justify-between gap-3"></div>
+
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8 print-card">
+        <div class="flex flex-wrap justify-between items-start gap-4 border-b border-slate-100 pb-5 mb-6">
+          <div>
+            <span class="text-xs font-bold uppercase tracking-wider text-indigo-600">Vezetői javaslat összesítő</span>
+            <h2 class="text-2xl font-bold text-slate-900 mt-0.5">Osztályfőnöki Jelölések – <span id="res-leader"></span></h2>
+            <p id="res-date" class="text-xs text-slate-500 mt-1"></p>
+          </div>
+          <div class="flex gap-2 no-print">
+            <button onclick="window.print()" class="bg-slate-800 hover:bg-slate-900 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition">
+              🖨️ Nyomtatás / PDF
+            </button>
+            <button onclick="location.reload()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold px-4 py-2.5 rounded-xl transition">
+              ↺ Új kitöltés
+            </button>
+          </div>
+        </div>
+
+        <!-- Kiemelt 3 jelölti kategória -->
+        <h3 class="font-bold text-base text-slate-900 mb-3">🌟 Támogatott osztályfőnök-jelöltek (rangsorolva)</h3>
+        <div id="res-ranked-grid" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8"></div>
+
+        <!-- Többi 3 kategória összesítője -->
+        <h3 class="font-bold text-base text-slate-900 mb-3">📋 További tantestületi kategóriák</h3>
+        <div id="res-other-grid" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    // =========================================================================
+    // 1. IDE ILLESZD BE A GOOGLE APPS SCRIPT LINKET (ha közös táblázatba gyűjtöd):
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxsMUAvTB-2YwnTKsVx9UP909iE8zFSgxIP4uOfgvUFj3GknTdCJPMVE0Ccf2rtUZJFUw/exec";
+
+    // 2. IDE ÍRHATOD BE A TANTESTÜLET NEVEIT (a kezdőlapon is szerkeszthető):
+   const DEFAULT_TEACHERS = [
+      "Balogh Bence",
+      "Bartusz Péter",
+      "Csizmadia Zsolt",
+      "Csuzdi Eszter",
+      "Dékány Zoltán Ferenc",
+      "Dobayné Kovács Mária",
+      "Jánossyné Terenyi Erika",
+      "Jernei Gabriella",
+      "Jusztinné Nedelkovics Aliz",
+      "Kalmárné Németh Márta",
+      "Károlyi Attila Ferenc",
+      "Keserű György",
+      "Keszeli Viola",
+      "Dr. Kissné Dr. Oláh Boglárka Sára",
+      "Kocsis András Balázsné Király Tünde Teréz",
+      "Dr. Kokaveczné Bánki Judit Eszter",
+      "Koncz János András",
+      "Korom Ádám",
+      "Kovács István Ferenc",
+      "Kovács Mihály Ákos",
+      "Ladányi Andrea",
+      "Márkus Roland",
+      "Maróti Kristóf",
+      "Medvegy Péter",
+      "Mészáros Nándor",
+      "Mészárosné Szabó Tünde",
+      "Molnár Csenge",
+      "Molnár-Balogh Orsolya",
+      "Nagy Gergő",
+      "Nagy Mariann",
+      "Nemes Zsuzsanna",
+      "Olajos Anita",
+      "Posztós Ildikó Piroska",
+      "Rácz László Árpád",
+      "Sára-Kecskés Fanni",
+      "Dr. Serényi Tamás",
+      "Sipos Attila",
+      "Sipos Donát",
+      "Szalóki Noémi",
+      "Szilák Zsófia",
+      "Dr. Torma Gábor",
+      "Tóth Gábor Norbert",
+      "Tóth Károly",
+      "Tőzsér Pál",
+      "Vincze Szabolcs",
+      "Zakar Máté",
+      "Zsova Tamás"
+    ];
+    // =========================================================================
+
+    const STEP1_CATS = [
+      {
+        id: "tech_ko",
+        label: "Technikai KO",
+        icon: "🚫",
+        btnActive: "bg-slate-700 text-white border-slate-700 shadow-xs",
+        btnIdle: "bg-white text-slate-700 border-slate-300 hover:bg-slate-100",
+        badgeCls: "bg-slate-200 text-slate-800"
+      },
+      {
+        id: "already_of",
+        label: "Már osztályfőnök",
+        icon: "🎓",
+        btnActive: "bg-sky-600 text-white border-sky-600 shadow-xs",
+        btnIdle: "bg-white text-sky-800 border-sky-200 hover:bg-sky-50",
+        badgeCls: "bg-sky-100 text-sky-800"
+      },
+      {
+        id: "candidate",
+        label: "Szóba jöhet",
+        icon: "✅",
+        btnActive: "bg-emerald-600 text-white border-emerald-600 shadow-xs",
+        btnIdle: "bg-white text-emerald-800 border-emerald-200 hover:bg-emerald-50",
+        badgeCls: "bg-emerald-100 text-emerald-800"
+      },
+      {
+        id: "not_suitable",
+        label: "Nem tudom elképzelni",
+        icon: "❌",
+        btnActive: "bg-rose-600 text-white border-rose-600 shadow-xs",
+        btnIdle: "bg-white text-rose-800 border-rose-200 hover:bg-rose-50",
+        badgeCls: "bg-rose-100 text-rose-800"
+      }
+    ];
+
+    const STEP2_CATS = [
+      {
+        id: "must_have",
+        label: "Mindenképpen támogatom",
+        sub: "1. számú jelölt",
+        icon: "⭐",
+        btnActive: "bg-amber-500 text-white border-amber-500 shadow-xs",
+        btnIdle: "bg-white text-amber-900 border-amber-300 hover:bg-amber-50",
+        cardBorder: "border-amber-300 bg-amber-50/50",
+        badgeCls: "bg-amber-100 text-amber-900 border border-amber-300"
+      },
+      {
+        id: "strongly_support",
+        label: "Nagyon támogatom",
+        sub: "Erős jelölt",
+        icon: "👍",
+        btnActive: "bg-emerald-600 text-white border-emerald-600 shadow-xs",
+        btnIdle: "bg-white text-emerald-800 border-emerald-300 hover:bg-emerald-50",
+        cardBorder: "border-emerald-300 bg-emerald-50/50",
+        badgeCls: "bg-emerald-100 text-emerald-900 border border-emerald-300"
+      },
+      {
+        id: "possible",
+        label: "Ők is szóba jöhetnek",
+        sub: "Tartalék / 2. kör",
+        icon: "🔹",
+        btnActive: "bg-sky-600 text-white border-sky-600 shadow-xs",
+        btnIdle: "bg-white text-sky-800 border-sky-300 hover:bg-sky-50",
+        cardBorder: "border-sky-300 bg-sky-50/50",
+        badgeCls: "bg-sky-100 text-sky-900 border border-sky-300"
+      }
+    ];
+
+    let leaderName = "";
+    let teachers = [];
+    let step1Choices = {}; // { "Balogh Katalin": "candidate", ... }
+    let step2Choices = {}; // { "Balogh Katalin": "must_have", ... }
+    let candidateNotes = {}; // { "Balogh Katalin": "9. nyelvi osztályba szuper", ... }
+    let activeFilter = "all";
+
+    // Kezdő névsor betöltése a textarea-ba
+    window.addEventListener("DOMContentLoaded", () => {
+      const ta = document.getElementById("teacher-list-input");
+      ta.value = DEFAULT_TEACHERS.join("\n");
+      updateTeacherCount();
+    });
+
+    function parseTeacherList() {
+      const raw = document.getElementById("teacher-list-input").value;
+      const lines = raw.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+      // Duplikációk kiszűrése
+      return [...new Set(lines)];
+    }
+
+    function updateTeacherCount() {
+      const list = parseTeacherList();
+      document.getElementById("teacher-count-badge").textContent = list.length;
+    }
+
+    function startStep1() {
+      const nameInput = document.getElementById("leader-name").value.trim();
+      if (!nameInput) {
+        document.getElementById("name-error").classList.remove("hidden");
+        return;
+      }
+      const list = parseTeacherList();
+      if (list.length === 0) {
+        alert("Kérlek, adj meg legalább egy tanárnevet a listában!");
+        return;
+      }
+
+      document.getElementById("name-error").classList.add("hidden");
+      leaderName = nameInput;
+      teachers = list;
+
+      // Megtartjuk a korábban bejelölt válaszokat, ha visszalépett a névsorhoz
+      const cleanedStep1 = {};
+      teachers.forEach(t => {
+        if (step1Choices[t]) cleanedStep1[t] = step1Choices[t];
+      });
+      step1Choices = cleanedStep1;
+
+      document.getElementById("s1-leader-display").textContent = leaderName;
+      document.getElementById("intro-section").classList.add("hidden");
+      document.getElementById("step1-section").classList.remove("hidden");
+      renderStep1();
+    }
+
+    function backToIntro() {
+      document.getElementById("step1-section").classList.add("hidden");
+      document.getElementById("intro-section").classList.remove("hidden");
+    }
+
+    function setStep1Choice(teacherName, catId) {
+      step1Choices[teacherName] = catId;
+      // Ha kikerült a "Szóba jöhet" kategóriából, töröljük a 2. körös besorolását
+      if (catId !== "candidate") {
+        delete step2Choices[teacherName];
+      }
+      renderStep1();
+    }
+
+    function setFilter(filterKey) {
+      activeFilter = filterKey;
+      renderStep1();
+    }
+
+    function renderStep1() {
+      const total = teachers.length;
+      const assignedCount = Object.keys(step1Choices).length;
+      const remaining = total - assignedCount;
+
+      const counts = {
+        all: total,
+        unassigned: remaining,
+        tech_ko: 0,
+        already_of: 0,
+        candidate: 0,
+        not_suitable: 0
+      };
+      Object.values(step1Choices).forEach(c => {
+        if (counts[c] !== undefined) counts[c]++;
+      });
+
+      // Állapotjelző jelvény
+      const badge = document.getElementById("s1-progress-badge");
+      if (remaining === 0) {
+        badge.className = "text-xs font-bold px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300";
+        badge.textContent = "✅ Minden tanár besorolva (" + total + " / " + total + ")";
+      } else {
+        badge.className = "text-xs font-bold px-3 py-1.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200";
+        badge.textContent = `Még ${remaining} fő nincs besorolva (${assignedCount} / ${total})`;
+      }
+
+      // Szűrősáv
+      const filters = [
+        { key: "all", label: `Összes (${counts.all})` },
+        { key: "unassigned", label: `Hátravan (${counts.unassigned})` },
+        { key: "candidate", label: `✅ Szóba jöhet (${counts.candidate})` },
+        { key: "already_of", label: `🎓 Már ofő (${counts.already_of})` },
+        { key: "tech_ko", label: `🚫 Tech. KO (${counts.tech_ko})` },
+        { key: "not_suitable", label: `❌ Nem (${counts.not_suitable})` }
+      ];
+
+      document.getElementById("s1-filter-bar").innerHTML = filters.map(f => {
+        const isSel = activeFilter === f.key;
+        const cls = isSel
+          ? "bg-indigo-600 text-white border-indigo-600"
+          : "bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200";
+        return `<button onclick="setFilter('${f.key}')" class="py-1.5 px-2 rounded-lg border transition truncate">${f.label}</button>`;
+      }).join("");
+
+      // Szűrt tanárlista megjelenítése
+      const filteredTeachers = teachers.filter(t => {
+        const ch = step1Choices[t];
+        if (activeFilter === "all") return true;
+        if (activeFilter === "unassigned") return !ch;
+        return ch === activeFilter;
+      });
+
+      const listContainer = document.getElementById("s1-teachers-list");
+      if (filteredTeachers.length === 0) {
+        listContainer.innerHTML = `<div class="bg-white rounded-2xl p-8 text-center text-sm text-slate-500 border border-slate-200">Ebben a szűrőben jelenleg nincs tanár.</div>`;
+      } else {
+        listContainer.innerHTML = filteredTeachers.map((teacher, idx) => {
+          const currentCat = step1Choices[teacher];
+          const encodedName = encodeURIComponent(teacher);
+
+          const buttonsHtml = STEP1_CATS.map(cat => {
+            const isSel = currentCat === cat.id;
+            return `
+              <button type="button" onclick="setStep1Choice(decodeURIComponent('${encodedName}'), '${cat.id}')"
+                class="py-2 px-2.5 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-1.5 ${isSel ? cat.btnActive : cat.btnIdle}">
+                <span>${cat.icon}</span>
+                <span>${cat.label}</span>
+              </button>
+            `;
+          }).join("");
+
+          return `
+            <div class="bg-white rounded-2xl border ${currentCat ? 'border-slate-200' : 'border-amber-300 bg-amber-50/20'} p-4 shadow-2xs flex flex-col lg:flex-row lg:items-center justify-between gap-3 transition">
+              <div class="flex items-center gap-2.5">
+                <span class="w-7 h-7 rounded-full bg-slate-100 text-slate-600 text-xs font-bold flex items-center justify-center shrink-0">
+                  ${teachers.indexOf(teacher) + 1}
+                </span>
+                <span class="font-bold text-base text-slate-900">${teacher}</span>
+              </div>
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 lg:w-3/4">
+                ${buttonsHtml}
+              </div>
+            </div>
+          `;
+        }).join("");
+      }
+
+      // Továbblépés gomb állapota
+      const btnNext = document.getElementById("btn-to-step2");
+      const lockHint = document.getElementById("s1-lock-hint");
+      btnNext.disabled = remaining > 0;
+
+      if (remaining > 0) {
+        lockHint.textContent = `Még ${remaining} tanárt be kell sorolnod a továbblépéshez.`;
+        btnNext.textContent = "Tovább a jelöltekhez →";
+      } else {
+        lockHint.textContent = `${counts.candidate} jelölt jutott tovább a 2. lépésbe.`;
+        btnNext.textContent = counts.candidate > 0
+          ? `Tovább a ${counts.candidate} jelölt rangsorolásához →`
+          : "Tovább az összesítéshez →";
+      }
+    }
+
+    function startStep2() {
+      const candidates = teachers.filter(t => step1Choices[t] === "candidate");
+      if (candidates.length === 0) {
+        // Ha senkit sem jelölt "Szóba jöhet"-nek, egyből az összesítésre lép
+        finishDecision();
+        return;
+      }
+
+      document.getElementById("step1-section").classList.add("hidden");
+      document.getElementById("step2-section").classList.remove("hidden");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      renderStep2();
+    }
+
+    function backToStep1() {
+      document.getElementById("step2-section").classList.add("hidden");
+      document.getElementById("step1-section").classList.remove("hidden");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      renderStep1();
+    }
+
+    function setStep2Choice(teacherName, catId) {
+      step2Choices[teacherName] = catId;
+      renderStep2();
+    }
+
+    function setCandidateNote(teacherName, noteVal) {
+      candidateNotes[teacherName] = noteVal;
+    }
+
+    function renderStep2() {
+      const candidates = teachers.filter(t => step1Choices[t] === "candidate");
+      const total = candidates.length;
+      const assigned = candidates.filter(t => step2Choices[t]).length;
+      const remaining = total - assigned;
+
+      document.getElementById("s2-count").textContent = total;
+
+      const badge = document.getElementById("s2-progress-badge");
+      if (remaining === 0) {
+        badge.className = "text-xs font-bold px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300";
+        badge.textContent = "✅ Minden jelölt besorolva";
+      } else {
+        badge.className = "text-xs font-bold px-3 py-1.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200";
+        badge.textContent = `Még ${remaining} jelölt nincs besorolva`;
+      }
+
+      // Számlálók
+      const counts = { must_have: 0, strongly_support: 0, possible: 0 };
+      candidates.forEach(t => {
+        if (step2Choices[t]) counts[step2Choices[t]]++;
+      });
+
+      document.getElementById("s2-counters").innerHTML = STEP2_CATS.map(c => `
+        <div class="bg-slate-100 border border-slate-200 rounded-xl p-2 text-center truncate">
+          <span class="block text-slate-700">${c.icon} ${c.label}</span>
+          <span class="text-sm font-extrabold text-slate-900">${counts[c.id]} fő</span>
+        </div>
+      `).join("");
+
+      // Jelöltek kártyái
+      document.getElementById("s2-candidates-list").innerHTML = candidates.map((teacher, idx) => {
+        const currentCat = step2Choices[teacher];
+        const noteVal = candidateNotes[teacher] || "";
+        const encodedName = encodeURIComponent(teacher);
+
+        const btns = STEP2_CATS.map(cat => {
+          const isSel = currentCat === cat.id;
+          return `
+            <button type="button" onclick="setStep2Choice(decodeURIComponent('${encodedName}'), '${cat.id}')"
+              class="py-2.5 px-3 rounded-xl border text-left transition flex items-center gap-2 ${isSel ? cat.btnActive : cat.btnIdle}">
+              <span class="text-base">${cat.icon}</span>
+              <div>
+                <span class="block text-xs md:text-sm font-bold leading-tight">${cat.label}</span>
+                <span class="block text-[10px] opacity-80">${cat.sub}</span>
+              </div>
+            </button>
+          `;
+        }).join("");
+
+        return `
+          <div class="bg-white rounded-2xl border ${currentCat ? 'border-slate-200' : 'border-amber-300 bg-amber-50/20'} p-4 md:p-5 shadow-2xs">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+              <div class="flex items-center gap-2.5">
+                <span class="w-7 h-7 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold flex items-center justify-center">
+                  ${idx + 1}
+                </span>
+                <h3 class="font-bold text-base md:text-lg text-slate-900">${teacher}</h3>
+              </div>
+              <input type="text" value="${noteVal.replace(/"/g, '&quot;')}"
+                oninput="setCandidateNote(decodeURIComponent('${encodedName}'), this.value)"
+                placeholder="Opcionális megjegyzés (pl. évfolyam, szakpár)..."
+                class="w-full sm:w-72 px-3 py-1.5 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+              ${btns}
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      const btnFinish = document.getElementById("btn-finish");
+      const lockHint = document.getElementById("s2-lock-hint");
+      btnFinish.disabled = remaining > 0;
+      lockHint.textContent = remaining > 0
+        ? `Még ${remaining} jelölt besorolása szükséges.`
+        : "Minden jelölt besorolva, készíthető az összesítés.";
+    }
+
+    async function finishDecision() {
+      const grouped = {
+        must_have: [],
+        strongly_support: [],
+        possible: [],
+        already_of: [],
+        tech_ko: [],
+        not_suitable: []
+      };
+
+      const detailedRows = [];
+
+      teachers.forEach(t => {
+        const s1 = step1Choices[t];
+        if (s1 === "candidate") {
+          const s2 = step2Choices[t] || "possible";
+          const note = (candidateNotes[t] || "").trim();
+          grouped[s2].push({ name: t, note });
+          const catLabel = STEP2_CATS.find(c => c.id === s2).label;
+          detailedRows.push(`${t}: ${catLabel}${note ? " (" + note + ")" : ""}`);
+        } else {
+          grouped[s1].push({ name: t, note: "" });
+          const catLabel = STEP1_CATS.find(c => c.id === s1).label;
+          detailedRows.push(`${t}: ${catLabel}`);
+        }
+      });
+
+      document.getElementById("step1-section").classList.add("hidden");
+      document.getElementById("step2-section").classList.add("hidden");
+      document.getElementById("result-section").classList.remove("hidden");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+
+      document.getElementById("res-leader").textContent = leaderName;
+      document.getElementById("res-date").textContent = "Rögzítés ideje: " + new Date().toLocaleString("hu-HU");
+
+      // Kiemelt 3 jelölti kártya
+      document.getElementById("res-ranked-grid").innerHTML = STEP2_CATS.map(cat => {
+        const list = grouped[cat.id];
+        return `
+          <div class="rounded-2xl border p-4 ${cat.cardBorder}">
+            <div class="flex items-center justify-between gap-2 mb-3">
+              <h4 class="font-bold text-sm text-slate-900">${cat.icon} ${cat.label}</h4>
+              <span class="text-xs font-bold px-2.5 py-0.5 rounded-full ${cat.badgeCls}">${list.length} fő</span>
+            </div>
+            ${list.length > 0
+              ? `<ul class="space-y-1.5 text-sm">
+                  ${list.map(item => `
+                    <li class="bg-white px-3 py-2 rounded-xl border border-slate-200/80">
+                      <span class="font-bold text-slate-800 block">${item.name}</span>
+                      ${item.note ? `<span class="text-xs text-slate-500 block mt-0.5">💬 ${item.note}</span>` : ""}
+                    </li>
+                  `).join("")}
+                </ul>`
+              : `<p class="text-xs text-slate-500 italic">Nincs besorolt jelölt.</p>`
+            }
+          </div>
+        `;
+      }).join("");
+
+      // Többi 3 kategória
+      const otherCats = STEP1_CATS.filter(c => c.id !== "candidate");
+      document.getElementById("res-other-grid").innerHTML = otherCats.map(cat => {
+        const list = grouped[cat.id];
+        return `
+          <div class="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+            <div class="flex items-center justify-between gap-2 mb-2.5">
+              <h4 class="font-bold text-sm text-slate-800">${cat.icon} ${cat.label}</h4>
+              <span class="text-xs font-bold px-2.5 py-0.5 rounded-full ${cat.badgeCls}">${list.length} fő</span>
+            </div>
+            ${list.length > 0
+              ? `<div class="flex flex-wrap gap-1.5">
+                  ${list.map(item => `<span class="text-xs bg-white border border-slate-200 px-2.5 py-1 rounded-lg font-medium text-slate-700">${item.name}</span>`).join("")}
+                </div>`
+              : `<p class="text-xs text-slate-400 italic">Üres kategória.</p>`
+            }
+          </div>
+        `;
+      }).join("");
+
+      // Google Táblázat küldés előkészítése
+      const formatNames = arr => arr.length > 0
+        ? arr.map(x => x.note ? `${x.name} (${x.note})` : x.name).join(", ")
+        : "-";
+
+      const payload = {
+        leaderName,
+        groups: {
+          mustHave: formatNames(grouped.must_have),
+          stronglySupport: formatNames(grouped.strongly_support),
+          possible: formatNames(grouped.possible),
+          alreadyClassTeacher: formatNames(grouped.already_of),
+          techKo: formatNames(grouped.tech_ko),
+          notSuitable: formatNames(grouped.not_suitable)
+        },
+        detailedList: detailedRows.join(" | ")
+      };
+
+      await sendToGoogleSheet(payload);
+    }
+
+    async function sendToGoogleSheet(payload) {
+      const banner = document.getElementById("sync-banner");
+
+      if (!GOOGLE_SCRIPT_URL) {
+        banner.className = "no-print rounded-xl p-4 border text-sm font-medium bg-amber-50 border-amber-200 text-amber-800";
+        banner.innerHTML = "<span>ℹ️ <strong>Helyi mód:</strong> Nincs megadva Google Táblázat link a kódban, így az összesítő ezen a képernyőn érhető el (PDF-be nyomtatható).</span>";
+        return;
+      }
+
+      banner.className = "no-print rounded-xl p-4 border text-sm font-medium bg-indigo-50 border-indigo-200 text-indigo-800";
+      banner.innerHTML = "<span>⏳ Vezetői besorolás rögzítése a közös Google Táblázatba...</span>";
+
+      try {
+        await fetch(GOOGLE_SCRIPT_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payload)
+        });
+
+        banner.className = "no-print rounded-xl p-4 border text-sm font-medium bg-emerald-50 border-emerald-200 text-emerald-800";
+        banner.innerHTML = "<span>✅ <strong>Sikeres rögzítés!</strong> A javaslataid bekerültek a vezetőségi összesítő táblázatba.</span>";
+      } catch (error) {
+        banner.className = "no-print rounded-xl p-4 border text-sm font-medium bg-rose-50 border-rose-200 text-rose-800";
+        banner.innerHTML = "<span>⚠️ Hálózati hiba miatt nem sikerült az online mentés. Kérlek, mentsd el PDF-be a Nyomtatás gombbal!</span>";
+      }
+    }
+
+    function fillDemoData() {
+      if (!leaderName) {
+        leaderName = "Minta Igazgatóhelyettes (Demó)";
+        document.getElementById("leader-name").value = leaderName;
+      }
+      teachers = parseTeacherList();
+      const s1Sample = ["candidate", "already_of", "candidate", "tech_ko", "candidate", "not_suitable", "already_of", "candidate"];
+      const s2Sample = ["must_have", "strongly_support", "possible", "must_have", "strongly_support"];
+
+      let candIdx = 0;
+      teachers.forEach((t, i) => {
+        const c1 = s1Sample[i % s1Sample.length];
+        step1Choices[t] = c1;
+        if (c1 === "candidate") {
+          step2Choices[t] = s2Sample[candIdx % s2Sample.length];
+          if (candIdx === 0) candidateNotes[t] = "9. évfolyamra kiváló lenne";
+          candIdx++;
+        }
+      });
+
+      document.getElementById("intro-section").classList.add("hidden");
+      document.getElementById("step1-section").classList.add("hidden");
+      document.getElementById("step2-section").classList.add("hidden");
+      finishDecision();
+    }
+  </script>
+</body>
+</html>
