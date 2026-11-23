@@ -306,23 +306,8 @@
     let candidateNotes = {}; // { "Balogh Katalin": "9. nyelvi osztályba szuper", ... }
     let activeFilter = "all";
 
-    // Kezdő névsor betöltése a textarea-ba
-    window.addEventListener("DOMContentLoaded", () => {
-      const ta = document.getElementById("teacher-list-input");
-      ta.value = DEFAULT_TEACHERS.join("\n");
-      updateTeacherCount();
-    });
-
-    function parseTeacherList() {
-      const raw = document.getElementById("teacher-list-input").value;
-      const lines = raw.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
-      // Duplikációk kiszűrése
-      return [...new Set(lines)];
-    }
-
-    function updateTeacherCount() {
-      const list = parseTeacherList();
-      document.getElementById("teacher-count-badge").textContent = list.length;
+function parseTeacherList() {
+      return [...new Set(DEFAULT_TEACHERS.map(s => s.trim()).filter(Boolean))];
     }
 
     function startStep1() {
